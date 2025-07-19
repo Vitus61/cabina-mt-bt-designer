@@ -61,12 +61,43 @@ class EarthSwitchDesigner:
                     "product_codes": {
                         # Nomenclatura REALE ABB basata su tensione/corrente
                         "12kV_25kA": "EK6-12-25",
-                        "12kV_50kA": "EK6-12-50", 
+                        "12kV_31.5kA": "EK6-12-31.5",
+                        "12kV_40kA": "EK6-12-40",
+                        "12kV_50kA": "EK6-12-50",
+                        "12kV_63kA": "EK6-12-63",
+                        "12kV_80kA": "EK6-12-80",
+                        "12kV_100kA": "EK6-12-100",
+                        "12kV_120kA": "EK6-12-120",
+                        "17.5kV_25kA": "EK6-17.5-25",
                         "17.5kV_31.5kA": "EK6-17.5-31.5",
+                        "17.5kV_40kA": "EK6-17.5-40",
                         "17.5kV_50kA": "EK6-17.5-50",
+                        "17.5kV_63kA": "EK6-17.5-63",
+                        "17.5kV_80kA": "EK6-17.5-80",
+                        "17.5kV_100kA": "EK6-17.5-100",
+                        "17.5kV_120kA": "EK6-17.5-120",
                         "24kV_25kA": "EK6-24-25",
+                        "24kV_31.5kA": "EK6-24-31.5",
+                        "24kV_40kA": "EK6-24-40",
                         "24kV_50kA": "EK6-24-50",
+                        "24kV_63kA": "EK6-24-63",
+                        "24kV_80kA": "EK6-24-80",
+                        "24kV_100kA": "EK6-24-100",
+                        "24kV_120kA": "EK6-24-120",
+                        "36kV_25kA": "EK6-36-25",
+                        "36kV_31.5kA": "EK6-36-31.5",
+                        "36kV_40kA": "EK6-36-40",
+                        "36kV_50kA": "EK6-36-50",
                         "36kV_63kA": "EK6-36-63",
+                        "36kV_80kA": "EK6-36-80",
+                        "36kV_100kA": "EK6-36-100",
+                        "36kV_120kA": "EK6-36-120",
+                        "40.5kV_25kA": "EK6-40.5-25",
+                        "40.5kV_31.5kA": "EK6-40.5-31.5",
+                        "40.5kV_40kA": "EK6-40.5-40",
+                        "40.5kV_50kA": "EK6-40.5-50",
+                        "40.5kV_63kA": "EK6-40.5-63",
+                        "40.5kV_80kA": "EK6-40.5-80",
                         "40.5kV_100kA": "EK6-40.5-100",
                         "40.5kV_120kA": "EK6-40.5-120"
                     },
@@ -105,13 +136,25 @@ class EarthSwitchDesigner:
                     "product_codes": {
                         # Nomenclatura REALE ABB per OJWN
                         "12kV_25kA": "OJWN 12/25",
+                        "12kV_31.5kA": "OJWN 12/31.5", 
+                        "12kV_40kA": "OJWN 12/40",
+                        "12kV_50kA": "OJWN 12/50",
                         "12kV_63kA": "OJWN 12/63",
+                        "12kV_80kA": "OJWN 12/80",
                         "12kV_100kA": "OJWN 12/100",
+                        "17.5kV_25kA": "OJWN 17.5/25",
                         "17.5kV_31.5kA": "OJWN 17.5/31.5",
+                        "17.5kV_40kA": "OJWN 17.5/40",
+                        "17.5kV_50kA": "OJWN 17.5/50",
                         "17.5kV_63kA": "OJWN 17.5/63",
+                        "17.5kV_80kA": "OJWN 17.5/80",
                         "17.5kV_100kA": "OJWN 17.5/100",
+                        "24kV_25kA": "OJWN 24/25",
+                        "24kV_31.5kA": "OJWN 24/31.5",
+                        "24kV_40kA": "OJWN 24/40",
                         "24kV_50kA": "OJWN 24/50",
                         "24kV_63kA": "OJWN 24/63",
+                        "24kV_80kA": "OJWN 24/80",
                         "24kV_100kA": "OJWN 24/100"
                     },
                     "versions": [
@@ -268,9 +311,16 @@ class EarthSwitchDesigner:
                 product_code = series_data["product_codes"]["kit_basic"]
             cost = series_data["cost_base"] + selected_cc_current * series_data.get("cost_per_component", 0) / 10
         else:
-            # EK6 e OJWN usano nomenclatura standard
-            product_code = series_data["product_codes"].get(voltage_key, 
-                                                           f"{series}-{selected_voltage}-{selected_cc_current}")
+            # EK6 e OJWN usano nomenclatura standard ABB
+            product_code = series_data["product_codes"].get(voltage_key)
+            if not product_code:
+                # Fallback con nomenclatura corretta ABB
+                if series == "OJWN":
+                    product_code = f"OJWN {selected_voltage}/{int(selected_cc_current)}"
+                elif series == "EK6":
+                    product_code = f"EK6-{selected_voltage}-{int(selected_cc_current)}"
+                else:
+                    product_code = f"{series}-{selected_voltage}-{int(selected_cc_current)}"
             cost = series_data["cost_base"] + selected_cc_current * series_data["cost_per_ka"]
         
         return EarthSwitchSpec(
