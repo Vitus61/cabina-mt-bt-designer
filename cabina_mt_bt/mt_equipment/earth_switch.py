@@ -2,6 +2,7 @@
 Modulo Sezionatore di Terra - CEI 11-27
 Da integrare nel Software Cabina MT/BT Professional v2.0
 AGGIORNATO con serie ABB reali da catalogo ufficiale
+COMPATIBILE con codice esistente
 """
 
 import streamlit as st
@@ -186,6 +187,96 @@ class EarthSwitchDesigner:
             }
         }
     
+    # METODO COMPATIBILE CON CODICE ESISTENTE - FIRMA ORIGINALE
+    def _design_fixed_earth_switch(self, voltage_kv: float, max_current: float) -> EarthSwitchSpec:
+        """Progetta sezionatore di terra fisso ABB - VERSIONE COMPATIBILE"""
+        
+        # Valori di default per compatibilità
+        short_circuit_ka = 25.0  # Default ragionevole
+        series = self._select_optimal_series(voltage_kv, max_current, short_circuit_ka)
+        arc_protection = False  # Default
+        
+        return self._design_fixed_earth_switch_complete(
+            voltage_kv, max_current, short_circuit_ka, series, arc_protection
+        )
+    
+    def _design_fixed_earth_switch_complete(self, voltage_kv: float, max_current: float, 
+                                          short_circuit_ka: float, series: str,
+                                          arc_protection: bool = False) -> EarthSwitchSpec:
+        """Progetta sezionatore di terra fisso ABB - VERSIONE COMPLETA"""
+        
+        series_data = self.earth_switch_database["fixed_switches"][series]
+        
+        # Selezione tensione standard
+        selected_voltage = next((v for v in series_data["voltage_range"] if v >= voltage_kv), 
+                               max(series_data["voltage_range"]))
+        
+        # Selezione corrente cortocircuito standard  
+        selected_cc_current = next((c for c in series_data["current_range"] if c >= short_circuit_ka),
+                                  max(series_data["current_range"]))
+        
+        # Selezione corrente normale
+        selected_normal_current = next((c for c in series_data["normal_current_range"] if c >= max_current),
+                                      max(series_data["normal_current_range"]))
+        
+        # Genera codice prodotto
+        voltage_key = f"{selected_voltage}kV_{selected_cc_current}kA"
+        product_code = series_data["product_codes"].get(voltage_key, 
+                                                       f"{series}-{selected_voltage}-{selected_cc_current}-3P-KI")
+        
+        # Calcola costo
+        cost = series_data["cost_base"] + selected_cc_current * series_data["cost_per_ka"]
+        
+        return EarthSwitchSpec(
+            type=EarthSwitchType.FIXED,
+            position=EarthSwitchPosition.DELIVERY_ROOM,
+            rated_voltage=int(selected_voltage),
+            rated_current=selected_normal_current,
+            poles=3,
+            key_interlock=True,
+            warning_sign=True,
+            cei_11_27_compliant=True,
+            product_code=product_code,
+            cost_estimate=int(cost),
+            installation_requirements=series_data["installation_requirements"]
+        )
+    
+    def _select_optimal_series(self, voltage_kv: float, max_current: float, short_circuit_ka: float) -> str:
+        """Seleziona automaticamente la serie ABB ottimale"""
+        
+        # Logica di selezione intelligente
+        suitable_series = []
+        
+        # Verifica EK6
+        ek6_data = self.earth_switch_database["fixed_switches"]["EK6"]
+        if (voltage_kv <= max(ek6_data["voltage_range"]) and 
+            short_circuit_ka <= max(ek6_data["current_range"])):
+            cost = ek6_data["cost_base"] + short_circuit_ka * ek6_data["cost_per_ka"]
+            suitable_series.append(("EK6", cost))
+        
+        # Verifica OJWN
+        ojwn_data = self.earth_switch_database["fixed_switches"]["OJWN"]
+        if (voltage_kv <= max(ojwn_data["voltage_range"]) and 
+            short_circuit_ka <= max(ojwn_data["current_range"])):
+            cost = ojwn_data["cost_base"] + short_circuit_ka * ojwn_data["cost_per_ka"]
+            suitable_series.append(("OJWN", cost))
+        
+        # Verifica UFES
+        ufes_data = self.earth_switch_database["fixed_switches"]["UFES"]
+        if (voltage_kv <= max(ufes_data["voltage_range"]) and 
+            short_circuit_ka <= max(ufes_data["current_range"])):
+            cost = ufes_data["cost_base"] + short_circuit_ka * ufes_data["cost_per_ka"]
+            suitable_series.append(("UFES", cost))
+        
+        # Seleziona il più economico tra quelli compatibili
+        if suitable_series:
+            # Ordina per costo crescente
+            suitable_series.sort(key=lambda x: x[1])
+            return suitable_series[0][0]  # Ritorna la serie più economica
+        
+        # Fallback su EK6 (serie più comune)
+        return "EK6"
+    
     def design_earth_switch_system(self, project_data: Dict) -> Dict:
         """Progetta sistema sezionatore di terra"""
         
@@ -206,7 +297,7 @@ class EarthSwitchDesigner:
         
         # Specifica tecnica
         if recommendation["type"] == EarthSwitchType.FIXED:
-            spec = self._design_fixed_earth_switch(
+            spec = self._design_fixed_earth_switch_complete(
                 voltage_kv, max_current, short_circuit_ka, 
                 recommendation["series"], arc_protection_required
             )
@@ -368,47 +459,6 @@ class EarthSwitchDesigner:
             "alternative": "EK6",
             "confidence": "medium"
         }
-    
-    def _design_fixed_earth_switch(self, voltage_kv: float, max_current: float, 
-                                 short_circuit_ka: float, series: str,
-                                 arc_protection: bool = False) -> EarthSwitchSpec:
-        """Progetta sezionatore di terra fisso ABB"""
-        
-        series_data = self.earth_switch_database["fixed_switches"][series]
-        
-        # Selezione tensione standard
-        selected_voltage = next((v for v in series_data["voltage_range"] if v >= voltage_kv), 
-                               max(series_data["voltage_range"]))
-        
-        # Selezione corrente cortocircuito standard  
-        selected_cc_current = next((c for c in series_data["current_range"] if c >= short_circuit_ka),
-                                  max(series_data["current_range"]))
-        
-        # Selezione corrente normale
-        selected_normal_current = next((c for c in series_data["normal_current_range"] if c >= max_current),
-                                      max(series_data["normal_current_range"]))
-        
-        # Genera codice prodotto
-        voltage_key = f"{selected_voltage}kV_{selected_cc_current}kA"
-        product_code = series_data["product_codes"].get(voltage_key, 
-                                                       f"{series}-{selected_voltage}-{selected_cc_current}-3P-KI")
-        
-        # Calcola costo
-        cost = series_data["cost_base"] + selected_cc_current * series_data["cost_per_ka"]
-        
-        return EarthSwitchSpec(
-            type=EarthSwitchType.FIXED,
-            position=EarthSwitchPosition.DELIVERY_ROOM,
-            rated_voltage=int(selected_voltage),
-            rated_current=selected_normal_current,
-            poles=3,
-            key_interlock=True,
-            warning_sign=True,
-            cei_11_27_compliant=True,
-            product_code=product_code,
-            cost_estimate=int(cost),
-            installation_requirements=series_data["installation_requirements"]
-        )
     
     def _design_mobile_earth_devices(self, voltage_kv: float, short_circuit_ka: float) -> EarthSwitchSpec:
         """Progetta sistema dispositivi mobili"""
