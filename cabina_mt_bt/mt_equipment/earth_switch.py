@@ -36,6 +36,10 @@ class EarthSwitchSpec:
     product_code: str = ""
     cost_estimate: int = 0
     installation_requirements: List[str] = None
+    # ✅ Nuovi campi aggiunti
+    short_circuit_current_ka: float = 0  # Corrente cortocircuito
+    iec_standard: str = ""  # Standard IEC
+    ip_rating: str = ""  # Grado protezione IP
 
 class EarthSwitchDesigner:
     """Progettista sezionatore di terra secondo CEI 11-27"""
@@ -111,6 +115,7 @@ class EarthSwitchDesigner:
                         "Compatibile con automazione Smart Grid"
                     ],
                     "iec_standard": "IEC 62271-102",
+                    "ip_rating": "IP54",  # Grado protezione per installazione indoor
                     "cost_base": 3500,
                     "cost_per_ka": 25,
                     "installation_requirements": [
@@ -170,6 +175,7 @@ class EarthSwitchDesigner:
                         "Controllo e direzione corrente selezionabili"
                     ],
                     "iec_standard": "IEC 62271-102",
+                    "ip_rating": "IP54",  # Grado protezione per installazione indoor
                     "cost_base": 2800,
                     "cost_per_ka": 35,
                     "installation_requirements": [
@@ -228,6 +234,7 @@ class EarthSwitchDesigner:
                         "Sistemi critici alta affidabilità",
                         "Retrofit di quadri esistenti"
                     ],
+                    "ip_rating": "IP65",  # Grado protezione elevato per ambienti critici
                     "cost_base": 15000,
                     "cost_per_component": 2500,  # Per PSE aggiuntivi
                     "installation_requirements": [
@@ -334,7 +341,11 @@ class EarthSwitchDesigner:
             cei_11_27_compliant=True,
             product_code=product_code,
             cost_estimate=int(cost),
-            installation_requirements=series_data["installation_requirements"]
+            installation_requirements=series_data["installation_requirements"],
+            # ✅ Nuovi campi
+            short_circuit_current_ka=selected_cc_current,
+            iec_standard=series_data["iec_standard"],
+            ip_rating=series_data["ip_rating"]
         )
     
     def _select_optimal_series(self, voltage_kv: float, max_current: float, short_circuit_ka: float) -> str:
@@ -599,7 +610,11 @@ class EarthSwitchDesigner:
             cei_11_27_compliant=True,
             product_code=f"CEI-EN-61230-{int(selected_voltage)}kV-{selected_cc_current}A",
             cost_estimate=series_data["cost_base"] + series_data["cost_per_set"],
-            installation_requirements=series_data["installation_requirements"]
+            installation_requirements=series_data["installation_requirements"],
+            # ✅ Nuovi campi per dispositivi mobili
+            short_circuit_current_ka=short_circuit_ka,
+            iec_standard="IEC 61230",
+            ip_rating="IP54"  # Standard per dispositivi mobili
         )
     
     def _generate_installation_guide(self, spec: EarthSwitchSpec) -> Dict:
@@ -853,23 +868,22 @@ def step_earth_switch_design(db_products=None):
     
     spec = earth_system['specification']
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         st.metric("Serie/Tipo", spec.product_code.split('-')[0] if '-' in spec.product_code else "Mobile")
         st.metric("Tensione Nominale", f"{spec.rated_voltage} kV")
+        st.metric("Corrente Nominale", f"{spec.rated_current} A")
     
     with col2:
-        st.metric("Corrente Nominale", f"{spec.rated_current} A")
         st.metric("Numero Poli", spec.poles)
+        st.metric("Costo Stimato", f"€{spec.cost_estimate:,}")
+        st.metric("CEI 11-27", "✅ Conforme" if spec.cei_11_27_compliant else "❌")
     
     with col3:
-        st.metric("Costo Stimato", f"€{spec.cost_estimate:,}")
-        st.metric("CEI 11-27", "✅ Conforme")
-    
-    with col4:
-        st.metric("Verifica ABB", "✅ Certificata")
-        st.metric("Standard", "IEC 62271-102" if spec.type == EarthSwitchType.FIXED else "CEI EN 61230")
+        st.metric("Corrente Cortocircuito", f"{spec.short_circuit_current_ka} kA")
+        st.metric("Standard IEC", spec.iec_standard)
+        st.metric("Grado IP", spec.ip_rating)
     
     # Guida installazione aggiornata
     st.subheader("📋 Guida Installazione ABB - Specifiche Verificate")
@@ -929,7 +943,11 @@ CONFORMITÀ: CEI 11-27 ✅ | ABB Certified ✅ | IEC Standard ✅
             'abb_verified': True,  # Aggiunto flag verifica
             'cost_estimate': spec.cost_estimate,
             'requirements': spec.installation_requirements,
-            'verification_status': 'Tutte le specifiche verificate da catalogo ABB ufficiale'
+            'verification_status': 'Tutte le specifiche verificate da catalogo ABB ufficiale',
+            # ✅ Nuovi campi tecnici
+            'short_circuit_current_ka': spec.short_circuit_current_ka,
+            'iec_standard': spec.iec_standard,
+            'ip_rating': spec.ip_rating
         }
         
         st.success("✅ Sistema sezionatore di terra ABB verificato e configurato!")
@@ -943,10 +961,12 @@ CONFORMITÀ: CEI 11-27 ✅ | ABB Certified ✅ | IEC Standard ✅
         • **Prodotto:** {spec.product_code}
         • **Tensione:** {spec.rated_voltage} kV
         • **Corrente:** {spec.rated_current} A
+        • **Corrente CC:** {spec.short_circuit_current_ka} kA
+        • **Standard:** {spec.iec_standard} ✅
+        • **Grado IP:** {spec.ip_rating}
         • **Costo:** €{spec.cost_estimate:,}
         • **Conformità:** CEI 11-27 ✅
         • **Verifica ABB:** Specifiche da catalogo ufficiale ✅
-        • **Standard:** IEC 62271-102 / CEI EN 61230 ✅
         """)
 
 # Esempio di utilizzo
