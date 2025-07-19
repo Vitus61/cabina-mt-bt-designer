@@ -611,20 +611,25 @@ def step_3_5_earth_switch_design():
     
     # Mostra specifica
     st.subheader("📊 Specifica Tecnica")
-    
+
+    spec = earth_system['specification']
+
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         st.metric("Soluzione", spec.type.value.replace('_', ' ').title())
         st.metric("Tensione", f"{spec.rated_voltage} kV")
-    
-    with col2:
         st.metric("Corrente", f"{spec.rated_current} A")
+
+    with col2:
+        st.metric("Numero Poli", spec.poles)
         st.metric("Codice Prodotto", spec.product_code)
-    
-    with col3:
         st.metric("Costo Stimato", f"€{spec.cost_estimate:,}")
-        st.metric("CEI 11-27", "✅ Conforme")
+
+    with col3:
+        st.metric("Corrente Cortocircuito", f"{spec.short_circuit_current_ka} kA")
+        st.metric("Standard IEC", spec.iec_standard)
+        st.metric("Grado IP", spec.ip_rating)
     
     # Requisiti installazione
     st.subheader("📋 Requisiti Installazione")
