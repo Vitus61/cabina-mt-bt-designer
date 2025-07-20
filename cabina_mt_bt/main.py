@@ -18,7 +18,7 @@ except ImportError as e:
 # Aggiungi la cartella del progetto al path per gli import
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Import dai nostri moduli
+# Import dai moduli
 try:
     from config.settings import APP_CONFIG, VERSION
 except ImportError:
@@ -39,7 +39,7 @@ except ImportError:
 from ui.sidebar import render_sidebar
 from ui.progress import render_progress_bar, initialize_session_state
 
-# ✅ CORREZIONE: Import corretto dalle funzioni esistenti in ui.steps
+# ✅ CORREZIONE: Import corretto in ui.steps
 try:
     from ui.steps import (
         step_1_distributor_data,
@@ -67,7 +67,7 @@ def main():
     initialize_session_state()
     
     # Header
-    st.title("⚡ Software Cabina MT/BT Professional v2.0")
+    st.title("⚡ Software Cabina MT/BT Non Professional v2.0")
     st.markdown(f"**Versione {VERSION} - Progettazione Guidata Step-by-Step**")
     
     # STATUS CHECK: Mostra stato moduli
@@ -111,7 +111,7 @@ def main():
     
     st.markdown("---")
     
-    # Verifica che UI steps siano disponibili
+    # Verifica che UI steps siano disponibili per debug
     if not UI_STEPS_AVAILABLE:
         st.error("❌ Impossibile caricare gli step dell'interfaccia utente")
         st.info("Controlla che il file ui/steps.py sia corretto e che non ci siano errori di import")
