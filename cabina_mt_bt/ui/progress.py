@@ -55,8 +55,12 @@ def render_progress_bar():
         "Quadro MT",
         "Coordinamento",
         "Quadro BT",
+        "Impianto di Terra",
         "Analisi Finale"
     ]
+    
+    # ✅ Mapping corretto posizione array → valore step
+    step_mapping = [1, 2, 3, 3.5, 4, 5, 6, 8, 9]
     
     current_step = st.session_state['current_step']
     completed_steps = st.session_state['completed_steps']
@@ -67,14 +71,16 @@ def render_progress_bar():
     
     # Indicatori step
     cols = st.columns(len(step_names))
-    for i, (col, step_name) in enumerate(zip(cols, step_names), 1):
+    for i, (col, step_name) in enumerate(zip(cols, step_names)):
         with col:
-            if i in completed_steps:
-                st.success(f"✅ Step {i}")
-            elif i == current_step:
-                st.info(f"🔄 Step {i}")
+            step_value = step_mapping[i]  # ✅ Usa il mapping corretto
+            
+            if step_value in completed_steps:
+                st.success(f"✅ Step {step_value}")
+            elif step_value == current_step:
+                st.info(f"🔄 Step {step_value}")
             else:
-                st.error(f"⭕ Step {i}")
+                st.error(f"⭕ Step {step_value}")
             st.caption(step_name)
     
     return current_step
