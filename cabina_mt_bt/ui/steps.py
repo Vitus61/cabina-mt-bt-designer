@@ -923,17 +923,17 @@ def step_5_protection_coordination():
 
 def convert_step2_loads_to_bt_distribution():
     """
-    Converte i carichi dello Step 2 in distribuzione BT
-    Calcola correnti e crea oggetti compatibili per il quadro BT
+    Converte i carichi dello Step 2 in distribuzione BT usando i risultati già calcolati
+    CORREGGE il bug del doppio conteggio dei fattori ku/kc
     """
     
-    # Recupera carichi dallo Step 2
-    loads_step2 = st.session_state.get('loads', [])
+    # ✅ USA I RISULTATI GIÀ CALCOLATI DELLO STEP 2
+    calculation_results = st.session_state.get('calculation_results')
     
-    if not loads_step2:
+    if not calculation_results or not calculation_results.get('load_breakdown'):
         return []
     
-    # ✅ Classe per carichi BT compatibile con il resto del codice - AGGIORNATA
+    # ✅ Classe BTLoad rimane uguale (necessaria per compatibilità)
     class BTLoad:
         def __init__(self, name, load_type, power_kw, current_a, priority, diversity, cos_phi):
             self.load_name = name
@@ -942,30 +942,32 @@ def convert_step2_loads_to_bt_distribution():
             self.current_a = current_a
             self.priority = priority
             self.diversity_factor = diversity
-            self.cos_phi = cos_phi  # ✅ Conserva cos φ originale
+            self.cos_phi = cos_phi
     
     bt_loads = []
     voltage_bt = 415  # V (tensione concatenata BT)
     
-    for load in loads_step2:
-        # Calcolo potenza totale considerando quantità e fattore di utilizzo
-        power_total_kw = load.power_kw * load.quantity * load.ku_factor
+    # ✅ CORREZIONE: Usa load_breakdown che contiene le potenze GIÀ ELABORATE
+    for load_result in calculation_results['load_breakdown']:
+        # ✅ Potenza effettiva GIÀ calcolata con ku * kc applicati
+        power_effective_kw = load_result['power_used_kw']
+        cos_phi = load_result['cos_phi']
         
-        # Calcolo corrente BT: I = P / (√3 × V × cos φ)
-        current_bt = (power_total_kw * 1000) / (1.732 * voltage_bt * load.cos_phi)
+        # ✅ Calcolo corrente BT dalla potenza effettiva
+        current_bt = (power_effective_kw * 1000) / (1.732 * voltage_bt * cos_phi)
         
-        # Determina priorità basata sulla potenza
-        priority = "Alta" if power_total_kw > 50 else "Media" if power_total_kw > 20 else "Bassa"
+        # Determina priorità basata sulla potenza effettiva
+        priority = "Alta" if power_effective_kw > 50 else "Media" if power_effective_kw > 20 else "Bassa"
         
-        # ✅ Crea oggetto BTLoad con cos φ originale
+        # ✅ Crea oggetto BTLoad con dati corretti
         bt_load = BTLoad(
-            name=load.name,
-            load_type=load.type_str,
-            power_kw=power_total_kw,
+            name=load_result['name'],
+            load_type=load_result['type'],
+            power_kw=power_effective_kw,  # ✅ Potenza effettiva (non grezza!)
             current_a=current_bt,
             priority=priority,
-            diversity=load.ku_factor,
-            cos_phi=load.cos_phi  # ✅ Passa cos φ originale
+            diversity=load_result['kc_factor'],  # ✅ CORRETTO: diversity (non diversity_factor)
+            cos_phi=cos_phi
         )
         
         bt_loads.append(bt_load)
