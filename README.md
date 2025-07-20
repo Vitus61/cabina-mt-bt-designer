@@ -1,8 +1,8 @@
-# 🏭 Cabina MT/BT Designer
+# Cabina MT/BT Designer
 
 Software NON professionale per progettazione cabine elettriche MT/BT secondo normative CEI.
 
-## ⚡ Funzionalità Implementate
+## Funzionalità Implementate
 - ✅ Calcolo carichi elettrici (CEI)
 - ✅ Dimensionamento trasformatori 
 - ✅ Progettazione quadro MT (UniSec ABB)
