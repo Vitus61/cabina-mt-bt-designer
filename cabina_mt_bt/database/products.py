@@ -1,8 +1,7 @@
 """
 Database prodotti ABB aggiornato con dati reali e codici prodotto ufficiali
 Basato su cataloghi ABB 2024-2025 e specifiche tecniche ufficiali
-AGGIORNATO per Step 6 - Quadro BT completo
-AGGIORNATO con Protezione Trasformatori - Involucro vs Barriere
+AGGIORNATO per Streamlit - Tutti gli attributi necessari inclusi
 """
 
 from dataclasses import dataclass
@@ -43,10 +42,13 @@ class BTBreakerSpec:
     cost_estimate: int = 0
     selectivity_class: str = "B"  # A, B, C per selettività
     applications: List[str] = None
+    # 🆕 ATTRIBUTI COMPLETI
+    manufacturer: str = "ABB"
+    description: str = ""
 
 @dataclass
 class BTSwitchSpec:
-    """Specifica sezionatore BT con dati ABB reali"""
+    """Specifica sezionatore BT con dati ABB reali - COMPLETA"""
     series: str
     product_code: str
     rated_current: int
@@ -57,6 +59,11 @@ class BTSwitchSpec:
     weight_kg: float = 0.0
     cost_estimate: int = 0
     applications: List[str] = None
+    # 🆕 ATTRIBUTI NECESSARI PER STREAMLIT
+    manufacturer: str = "ABB"
+    description: str = ""
+    breaking_capacity: int = 0  # kA
+    standards: List[str] = None
 
 @dataclass
 class BTLoadDistribution:
@@ -86,9 +93,12 @@ class TransformerSpec:
     cost_estimate: int = 0
     dimensions_mm: tuple = (0, 0, 0)  # L x W x H
     weight_kg: int = 0
-    # 🆕 NUOVI CAMPI PER PROTEZIONE TRASFORMATORI
+    # 🆕 PROTEZIONE TRASFORMATORI
     protection_type: str = "involucro_proprio"  # "nudo" | "involucro_proprio"
     barrier_required: bool = False  # True se richiede barriere CEI Cap. 8.14
+    # 🆕 ATTRIBUTI STREAMLIT
+    manufacturer: str = "ABB"
+    description: str = ""
 
 @dataclass
 class MTBreakerSpec:
@@ -104,6 +114,9 @@ class MTBreakerSpec:
     dimensions_mm: tuple = (0, 0, 0)  # L x W x H
     cost_estimate: int = 0
     arc_classification: str = "IAC AFLR"
+    # 🆕 ATTRIBUTI STREAMLIT
+    manufacturer: str = "ABB"
+    description: str = ""
 
 @dataclass
 class ProtectionRelaySpec:
@@ -117,6 +130,9 @@ class ProtectionRelaySpec:
     iec_61850_compliant: bool
     dimensions_mm: tuple = (0, 0, 0)  # L x W x H
     cost_estimate: int = 0
+    # 🆕 ATTRIBUTI STREAMLIT
+    manufacturer: str = "ABB"
+    description: str = ""
 
 @dataclass
 class UniSecUnit:
@@ -129,21 +145,24 @@ class UniSecUnit:
     breaking_capacity: int = 25
     product_code: str = ""
     cost_base: int = 0
+    # 🆕 ATTRIBUTI STREAMLIT
+    manufacturer: str = "ABB"
+    description: str = ""
 
 class ProductDatabase:
-    """Database ABB aggiornato con dati tecnici reali"""
+    """Database ABB aggiornato con dati tecnici reali per Streamlit"""
     
     def __init__(self):
         self.transformers = self._load_transformers()
         self.mt_switchgear = self._load_mt_switchgear()
         self.mt_breakers = self._load_mt_breakers()
         self.bt_breakers = self._load_bt_breakers()
-        self.bt_switches = self._load_bt_switches()  # 🆕 Sezionatori BT
+        self.bt_switches = self._load_bt_switches()
         self.protection_relays = self._load_protection_relays()
         self.instrument_transformers = self._load_instrument_transformers()
         self.unisec_units = self._load_unisec_units()
-        self.bt_load_templates = self._load_bt_load_templates()  # 🆕 Template carichi BT
-        self.selectivity_rules = self._load_selectivity_rules()  # 🆕 Regole selettività
+        self.bt_load_templates = self._load_bt_load_templates()
+        self.selectivity_rules = self._load_selectivity_rules()
     
     def _load_transformers(self) -> Dict:
         """Database trasformatori ABB con specifiche reali"""
@@ -188,9 +207,11 @@ class ProductDatabase:
                 cost_estimate=int(25000 + power * 85),
                 dimensions_mm=dims,
                 weight_kg=int(weight),
-                # 🆕 PROTEZIONE: TRASFORMATORE NUDO - RICHIEDE BARRIERE
+                # 🆕 PROTEZIONE: TRASFORMATORE NUDO
                 protection_type="nudo",
-                barrier_required=True
+                barrier_required=True,
+                manufacturer="ABB",
+                description=f"Trafo in resina epossidica {power} kVA hi-T +"
             )
         
         # Serie RESIBLOC (Resina sotto vuoto) - TRASFORMATORE NUDO
@@ -211,9 +232,11 @@ class ProductDatabase:
                 cost_estimate=int(hit_plus_series[power].cost_estimate * 1.25),
                 dimensions_mm=hit_plus_series[power].dimensions_mm,
                 weight_kg=hit_plus_series[power].weight_kg,
-                # 🆕 PROTEZIONE: TRASFORMATORE NUDO - RICHIEDE BARRIERE
+                # 🆕 PROTEZIONE: TRASFORMATORE NUDO
                 protection_type="nudo",
-                barrier_required=True
+                barrier_required=True,
+                manufacturer="ABB",
+                description=f"Trafo in resina s.v. {power} kVA RESIBLOC Premium"
             )
         
         # Serie ONAN (Olio minerale) - TRASFORMATORE CON INVOLUCRO METALLICO
@@ -239,9 +262,11 @@ class ProductDatabase:
                 cost_estimate=int(hit_plus_series[power].cost_estimate * 0.75),
                 dimensions_mm=dims,
                 weight_kg=int(weight),
-                # 🆕 PROTEZIONE: INVOLUCRO METALLICO PROPRIO - NESSUNA BARRIERA
+                # 🆕 PROTEZIONE: INVOLUCRO METALLICO PROPRIO
                 protection_type="involucro_proprio",
-                barrier_required=False
+                barrier_required=False,
+                manufacturer="ABB",
+                description=f"Trafo in olio min. {power} kVA con cassone met."
             )
         
         return {
@@ -289,6 +314,7 @@ class ProductDatabase:
                 "manufacturer": "ABB",
                 "insulation": "Vacuum",
                 "installation": "Indoor",
+                "description": "Interruttore MT in vuoto",
                 "product_codes": {
                     "12kV": {
                         "630A": "VD4-P/630-12-H",
@@ -318,6 +344,7 @@ class ProductDatabase:
                 "manufacturer": "ABB", 
                 "insulation": "SF6 gas",
                 "installation": "Indoor",
+                "description": "Interruttore MT in SF6 int.",
                 "product_codes": {
                     "24kV": {
                         "1250A": "HD4-P/1250-24-SF6",
@@ -351,6 +378,7 @@ class ProductDatabase:
                 "series": "SACE Emax 2",
                 "manufacturer": "ABB",
                 "type": "Air circuit breaker",
+                "description": "Interruttore aperto ACB",
                 "frames": {
                     "E1.2": {
                         "current_range": [800, 1000, 1200],  # A
@@ -404,8 +432,8 @@ class ProductDatabase:
             "tmax_series": {
                 "manufacturer": "ABB",
                 "type": "Molded case circuit breaker",
+                "description": "Interruttore scatolato MCCB",
                 "series": {
-                    # 🆕 Aggiunti T4, T5, T6 per partenze minori
                     "T4": {
                         "current_range": [160, 200, 250, 320, 400],  # A
                         "breaking_capacity": [25, 36, 50, 65],  # kA at 415V
@@ -478,13 +506,13 @@ class ProductDatabase:
         }
     
     def _load_bt_switches(self) -> Dict:
-        """🆕 Database sezionatori BT ABB (obbligatori per norma)"""
+        """🆕 Database sezionatori BT ABB completo per Streamlit"""
         return {
             "otm_series": {
                 "series": "OTM",
                 "manufacturer": "ABB",
                 "type": "Rotary switch disconnector",
-                "description": "Sezionatore rotativo per quadri BT",
+                "description": "Sezionatore rotat. BT",
                 "current_range": [125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000],
                 "voltage": 690,  # V
                 "poles": [3, 4],
@@ -512,7 +540,7 @@ class ProductDatabase:
                 "series": "OS",
                 "manufacturer": "ABB",
                 "type": "Load break switch",
-                "description": "Sezionatore sotto carico per quadri BT",
+                "description": "Sezionatore sotto carico BT",
                 "current_range": [160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600],
                 "voltage": 690,  # V
                 "poles": [3, 4],
@@ -628,7 +656,9 @@ class ProductDatabase:
                 cei_016_compliant=True,
                 iec_61850_compliant=True,
                 dimensions_mm=(130, 160, 102),
-                cost_estimate=2500
+                cost_estimate=2500,
+                manufacturer="ABB",
+                description="Relè protezione DG/partenze"
             ),
             "ref615": ProtectionRelaySpec(
                 series="REF615",
@@ -639,7 +669,9 @@ class ProductDatabase:
                 cei_016_compliant=True,
                 iec_61850_compliant=True,
                 dimensions_mm=(130, 210, 110),
-                cost_estimate=3500
+                cost_estimate=3500,
+                manufacturer="ABB",
+                description="Relè protezione avanzato"
             ),
             "ref630": ProtectionRelaySpec(
                 series="REF630",
@@ -650,7 +682,9 @@ class ProductDatabase:
                 cei_016_compliant=True,
                 iec_61850_compliant=True,
                 dimensions_mm=(130, 210, 110), 
-                cost_estimate=4500
+                cost_estimate=4500,
+                manufacturer="ABB",
+                description="Relè protezione distanza"
             )
         }
     
@@ -740,7 +774,9 @@ class ProductDatabase:
                 max_current=1250 if width >= 500 else 630,
                 breaking_capacity=25,
                 product_code=f"UniSec-DG-{width}mm",
-                cost_base=12000 + width * 8
+                cost_base=12000 + width * 8,
+                manufacturer="ABB",
+                description=f"Unità DG UniSec {width}mm - DG"
             )
             
             # Partenza Trasformatore
@@ -750,7 +786,9 @@ class ProductDatabase:
                 max_current=1250 if width >= 500 else 630,
                 breaking_capacity=25,
                 product_code=f"UniSec-TR-{width}mm",
-                cost_base=10000 + width * 6
+                cost_base=10000 + width * 6,
+                manufacturer="ABB",
+                description=f"Unità trasformatore UniSec {width}mm"
             )
             
             # Partenza Feeder
@@ -760,7 +798,9 @@ class ProductDatabase:
                 max_current=630,
                 breaking_capacity=25,
                 product_code=f"UniSec-OUT-{width}mm",
-                cost_base=8500 + width * 5
+                cost_base=8500 + width * 5,
+                manufacturer="ABB",
+                description=f"Unità partenza UniSec {width}mm"
             )
         
         # Moduli speciali
@@ -770,7 +810,9 @@ class ProductDatabase:
             max_current=630,
             breaking_capacity=0,  # Solo misure
             product_code="UniSec-MES-375mm",
-            cost_base=6500
+            cost_base=6500,
+            manufacturer="ABB",
+            description="Unità misure UniSec 375mm"
         )
         
         units["COUPLING_750"] = UniSecUnit(
@@ -779,7 +821,9 @@ class ProductDatabase:
             max_current=1600,
             breaking_capacity=25,
             product_code="UniSec-COUP-750mm",
-            cost_base=15000
+            cost_base=15000,
+            manufacturer="ABB",
+            description="Unità accoppiamento UniSec 750mm"
         )
         
         return {
@@ -794,7 +838,9 @@ class ProductDatabase:
             }
         }
     
-    # Metodi di selezione prodotti migliorati
+    # ===============================================================================
+    # METODI DI SELEZIONE PRODOTTI - AGGIORNATI CON TUTTI GLI ATTRIBUTI
+    # ===============================================================================
     
     def get_transformer_by_power(self, required_kva: float, series: str = "hi_t_plus", margin: float = 1.2) -> TransformerSpec:
         """Seleziona trasformatore per potenza richiesta da serie specifica"""
@@ -860,7 +906,9 @@ class ProductDatabase:
             insulation_medium=series_data["insulation"],
             dimensions_mm=(400, 600, 300),  # Tipiche per interruttore MT
             cost_estimate=cost,
-            arc_classification="IAC AFLR 25kA 1s"
+            arc_classification="IAC AFLR 25kA 1s",
+            manufacturer=series_data["manufacturer"],
+            description=series_data["description"]
         )
     
     def get_protection_relay_by_application(self, application: str) -> ProtectionRelaySpec:
@@ -919,7 +967,9 @@ class ProductDatabase:
         
         return fallback_units[unit_type]
     
-    # 🆕 Metodi per Step 6 - Quadro BT
+    # ===============================================================================
+    # METODI QUADRO BT - COMPLETI CON TUTTI GLI ATTRIBUTI
+    # ===============================================================================
     
     def get_bt_main_breaker(self, transformer_kva: float, breaking_ka: float = 50) -> BTBreakerSpec:
         """Seleziona interruttore generale BT per potenza trasformatore"""
@@ -950,7 +1000,9 @@ class ProductDatabase:
                             weight_kg=frame_data["weight"],
                             cost_estimate=self.bt_breakers["emax_2"]["cost_base"] + current * self.bt_breakers["emax_2"]["cost_per_amp"],
                             selectivity_class="A",
-                            applications=["Main distribution", "Transformer protection"]
+                            applications=["Main distribution", "Transformer protection"],
+                            manufacturer=self.bt_breakers["emax_2"]["manufacturer"],
+                            description=self.bt_breakers["emax_2"]["description"]
                         )
         
         # Fallback: frame più grande disponibile
@@ -970,7 +1022,9 @@ class ProductDatabase:
             weight_kg=frame_data["weight"],
             cost_estimate=self.bt_breakers["emax_2"]["cost_base"] + max_current * self.bt_breakers["emax_2"]["cost_per_amp"],
             selectivity_class="A",
-            applications=["Main distribution", "Transformer protection"]
+            applications=["Main distribution", "Transformer protection"],
+            manufacturer=self.bt_breakers["emax_2"]["manufacturer"],
+            description=self.bt_breakers["emax_2"]["description"]
         )
     
     def get_bt_feeder_breaker(self, load_current: float, application: str = "general") -> BTBreakerSpec:
@@ -999,7 +1053,9 @@ class ProductDatabase:
                             weight_kg=series_data["weight"],
                             cost_estimate=self.bt_breakers["tmax_series"]["cost_base"] + current * self.bt_breakers["tmax_series"]["cost_per_amp"],
                             selectivity_class="C",
-                            applications=series_data.get("applications", ["General distribution"])
+                            applications=series_data.get("applications", ["General distribution"]),
+                            manufacturer=self.bt_breakers["tmax_series"]["manufacturer"],
+                            description=self.bt_breakers["tmax_series"]["description"]
                         )
         else:
             # Seleziona da Emax 2 per correnti elevate
@@ -1021,11 +1077,13 @@ class ProductDatabase:
             weight_kg=series_data["weight"],
             cost_estimate=self.bt_breakers["tmax_series"]["cost_base"] + max_current * self.bt_breakers["tmax_series"]["cost_per_amp"],
             selectivity_class="C",
-            applications=["General distribution"]
+            applications=["General distribution"],
+            manufacturer=self.bt_breakers["tmax_series"]["manufacturer"],
+            description=self.bt_breakers["tmax_series"]["description"]
         )
     
     def get_bt_switch(self, current: float, load_break: bool = True) -> BTSwitchSpec:
-        """Seleziona sezionatore BT (obbligatorio per norma)"""
+        """🆕 Seleziona sezionatore BT con TUTTI gli attributi per Streamlit"""
         
         required_current = current * 1.1  # Margine minimo per sezionatori
         
@@ -1056,12 +1114,18 @@ class ProductDatabase:
             series=series_data["series"],
             product_code=product_code,
             rated_current=selected_current,
+            rated_voltage=series_data["voltage"],
             type=series_data["type"],
             poles=4,
             dimensions_mm=(150, 200, 120),  # Tipiche per sezionatore BT
             weight_kg=selected_current * 0.01 + 2,
             cost_estimate=int(cost),
-            applications=series_data["applications"]
+            applications=series_data["applications"],
+            # 🆕 TUTTI GLI ATTRIBUTI NECESSARI PER STREAMLIT
+            manufacturer=series_data["manufacturer"],
+            description=series_data["description"],
+            breaking_capacity=series_data["breaking_capacity"],
+            standards=series_data["standards"]
         )
     
     def get_bt_load_distribution(self, transformer_kva: float) -> List[BTLoadDistribution]:
@@ -1141,5 +1205,9 @@ class ProductDatabase:
         
         return results
 
-# Istanza globale del database aggiornato
+# ===============================================================================
+# ISTANZA GLOBALE DEL DATABASE
+# ===============================================================================
+
+# Istanza globale del database aggiornato per Streamlit
 product_db = ProductDatabase()
