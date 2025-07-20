@@ -45,19 +45,23 @@ def initialize_session_state():
         st.session_state['completed_steps'] = set()
 
 def render_progress_bar():
-    """Progress bar con step del progetto"""
+    """Progress bar con step del progetto - CORRETTO con mapping"""
     
+    # ✅ Array nomi step (9 elementi)
     step_names = [
-        "Dati Distributore",      # Step 1
-        "Calcolo Carichi",        # Step 2
-        "Trasformatori",          # Step 3
-        "Sezionatore di Terra",   # Step 3.5
-        "Quadro MT",              # Step 4
-        "Coordinamento",          # Step 5
-        "Quadro BT",              # Step 6
-        "Impianto di Terra",      # Step 8 🆕 NUOVO
-        "Analisi Finale"          # Step 9 🔄 SPOSTATO
+        "Dati Distributore",      # Posizione 0 → Step 1
+        "Calcolo Carichi",        # Posizione 1 → Step 2  
+        "Trasformatori",          # Posizione 2 → Step 3
+        "Sezionatore di Terra",   # Posizione 3 → Step 3.5
+        "Quadro MT",              # Posizione 4 → Step 4
+        "Coordinamento",          # Posizione 5 → Step 5
+        "Quadro BT",              # Posizione 6 → Step 6
+        "Impianto di Terra",      # Posizione 7 → Step 8
+        "Analisi Finale"          # Posizione 8 → Step 9
     ]
+    
+    # ✅ Mapping corretto posizione array → valore step
+    step_mapping = [1, 2, 3, 3.5, 4, 5, 6, 8, 9]
     
     current_step = st.session_state['current_step']
     completed_steps = st.session_state['completed_steps']
@@ -66,16 +70,18 @@ def render_progress_bar():
     progress_value = len(completed_steps) / len(step_names)
     st.progress(progress_value, f"Progresso: {len(completed_steps)}/{len(step_names)} step completati")
     
-    # Indicatori step
+    # Indicatori step con mapping corretto
     cols = st.columns(len(step_names))
-    for i, (col, step_name) in enumerate(zip(cols, step_names), 1):
+    for i, (col, step_name) in enumerate(zip(cols, step_names)):
         with col:
-            if i in completed_steps:
-                st.success(f"✅ Step {i}")
-            elif i == current_step:
-                st.info(f"🔄 Step {i}")
+            step_value = step_mapping[i]  # ✅ Usa il mapping corretto
+            
+            if step_value in completed_steps:
+                st.success(f"✅ Step {step_value}")
+            elif step_value == current_step:
+                st.info(f"🔄 Step {step_value}")
             else:
-                st.error(f"⭕ Step {i}")
+                st.error(f"⭕ Step {step_value}")
             st.caption(step_name)
     
     return current_step
