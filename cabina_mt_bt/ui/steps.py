@@ -195,6 +195,7 @@ def step_2_load_calculation():
         
         for load in st.session_state['loads']:
             load_power = load.power_kw * load.quantity * load.ku_factor
+            #load_power = load.power_kw * load.quantity
             load_type = load.type_str
             
             if load_type in load_distribution:
@@ -204,8 +205,11 @@ def step_2_load_calculation():
         
         # Calcola percentuali
         load_percentages = {}
+        # ✅ Usa la somma effettiva dei valori nel dizionario
+        actual_total_power = sum(load_distribution.values())
+
         for load_type, power in load_distribution.items():
-            percentage = (power / total_power * 100) if total_power > 0 else 0
+            percentage = (power / actual_total_power * 100) if actual_total_power > 0 else 0
             load_percentages[load_type] = percentage
         
         # Layout a due colonne per grafico più compatto
@@ -267,7 +271,7 @@ def step_2_load_calculation():
                 st.bar_chart(load_distribution)
         
         with col_stats:
-            st.write("**📋 Riepilogo:**")
+            st.write("**📋 Riepilogo (considerando k_u):**")
             
             # Tabella compatta
             for load_type, power in load_distribution.items():
@@ -385,7 +389,7 @@ def step_3_transformer_sizing(db):
     
     st.info(f"**Potenza totale calcolata:** {total_kva} kVA - **Tensione primaria:** {voltage_primary} kV")
     
-    # 🤖 RACCOMANDAZIONE INTELLIGENTE SERIE TRASFORMATORE
+    # RACCOMANDAZIONE INTELLIGENTE SERIE TRASFORMATORE
     st.subheader("🤖 Raccomandazione Intelligente Serie")
 
     # Leggi parametri dal session_state
@@ -487,19 +491,19 @@ def step_3_transformer_sizing(db):
     
     with col_user:
         if user_redundancy:
-            st.success("**👤 SCELTA UTENTE:**\n2 Trasformatori in Parallelo")
+            st.success("👤 SCELTA UTENTE:\n2 Trasformatori in Parallelo")
         else:
-            st.info("**👤 SCELTA UTENTE:**\n1 Trasformatore Singolo")
+            st.info("👤 SCELTA UTENTE:\n1 Trasformatore Singolo")
         st.caption("📝 Modificabile nella sidebar ➡️")
     
     # ✅ Verifica concordanza con warning
     if user_redundancy == recommended_redundancy:
-        st.success("✅ **SCELTA CONCORDANTE** - La scelta utente è in linea con la raccomandazione tecnica")
+        st.success("✅ SCELTA CONCORDANTE - La scelta utente è in linea con la raccomandazione tecnica")
     else:
         if user_redundancy and not recommended_redundancy:
-            st.warning("⚠️ **OVERRIDE UTENTE** - Scelti 2 trasformatori nonostante algoritmo raccomandi 1. Costo maggiore ma più sicurezza.")
+            st.warning("⚠️ OVERRIDE UTENTE - Scelti 2 trasformatori nonostante algoritmo raccomandi 1. Costo maggiore ma più sicurezza.")
         else:
-            st.error("🚨 **OVERRIDE UTENTE** - Scelto 1 trasformatore nonostante algoritmo raccomandi 2. Risparmi ma meno continuità di servizio.")
+            st.error("🚨 OVERRIDE UTENTE - Scelto 1 trasformatore nonostante algoritmo raccomandi 2. Risparmi ma meno continuità di servizio.")
     
     # Usa la scelta dell'utente per i calcoli
     redundancy = user_redundancy
@@ -519,12 +523,14 @@ def step_3_transformer_sizing(db):
     # Calcolo perdite secondo normativa con serie selezionata
     base_transformer = db.get_transformer_by_power(transformer_kva, selected_series)
 
+    st.markdown("---")
+
     # 🆕 INFORMAZIONI PROTEZIONE TRASFORMATORE
     st.subheader("🛡️ Informazioni Protezione Trasformatore")
 
     if base_transformer.protection_type == "nudo":
         st.warning(f"""
-        ⚠️ **TRASFORMATORE IN RESINA "NUDO"**
+        ⚠️ TRASFORMATORE IN RESINA "NUDO"
     
         Serie: {base_transformer.series}
         Questo trasformatore NON ha involucro metallico proprio
@@ -532,21 +538,19 @@ def step_3_transformer_sizing(db):
     
         if base_transformer.barrier_required:
             st.error(f"""
-            🚨 **RICHIEDE BARRIERE PROTETTIVE OBBLIGATORIE**
+            🚨 RICHIEDE BARRIERE PROTETTIVE OBBLIGATORIE
         
             **Norma:** CEI Cap. 8.14
             **Requisiti minimi:**
             • Altezza minima: 1800 mm
             • Grado protezione: IP2X
             • Distanza dalle parti attive per evitare scariche
-            • Materiale secondo CEI 99-2
-        
-            ⚠️ **Costi aggiuntivi da considerare:** €3.000-5.000 per barriere
+            • Materiale secondo CEI 99-2 -  !! ⚠️ Costi aggiuntivi da considerare: €3.000-5.000 per barriere
             """)
 
     elif base_transformer.protection_type == "involucro_proprio":
         st.success(f"""
-        ✅ **INVOLUCRO METALLICO PROPRIO (CASSONE)**
+        ✅ INVOLUCRO METALLICO PROPRIO (CASSONE)
     
         Serie: {base_transformer.series}
         Questo trasformatore HA cassone metallico integrato
@@ -570,7 +574,7 @@ def step_3_transformer_sizing(db):
         st.metric("Utilizzo", f"{load_factor*100:.1f}%")
     
     # Conformità normative
-    st.success("✅ **Conformità verificata:** Reg. UE 548/2014, CEI 99-4, CEI 14-8")
+    st.success("✅ Conformità verificata: Reg. UE 548/2014, CEI 99-4, CEI 14-8")
     
     # Salva configurazione trasformatori
     if st.button("✅ CONFERMA TRASFORMATORI", type="primary"):
@@ -621,12 +625,12 @@ def step_3_5_earth_switch_design():
     
     # Avviso critico
     st.error("""
-    🚨 **REQUISITO OBBLIGATORIO CEI 11-27**
+    🚨 REQUISITO OBBLIGATORIO CEI 11-27
     
     È necessario prevedere un sistema di messa a terra immediatamente a valle 
     dei terminali del cavo di collegamento alla rete del Distributore.
     
-    **⚠️ ATTENZIONE:** Il sezionatore di terra NON va nel quadro MT, 
+    ⚠️ ATTENZIONE: Il sezionatore di terra NON va nel quadro MT, 
     ma nel **locale consegna separato**.
     """)
     
@@ -756,13 +760,13 @@ def step_3_5_earth_switch_design():
 SCHEMA INSTALLAZIONE SEZIONATORE DI TERRA FISSO
 ═══════════════════════════════════════════════════════════════════
 
-DISTRIBUTORE ── Cavo MT ── TERMINALI ── [SEZIONATORE TERRA] ── QUADRO MT
-                              ↓              ↓                    ↓
-                        Locale Consegna   Interblocco         Locale Utente
-                        (Distributore)    con Chiave          (Utente)
-                                             ↓
-                                      "MANOVRABILE SOLO 
-                                   DOPO INTERVENTO DISTRIBUTORE"
+DISTRIBUTORE ── Cavo MT ── TERMINALI ──── [SEZIONATORE TERRA] ── QUADRO MT
+                              ↓                 ↓                    ↓
+                        Locale Consegna     Interblocco         Locale Utente
+                        (Distributore)       con Chiave          (Utente)
+                                                ↓
+                                          "MANOVRABILE SOLO 
+                                       DOPO INTERVENTO DISTRIBUTORE"
 
 CARATTERISTICHE:
 - Posizione: Locale consegna separato
@@ -776,14 +780,14 @@ CARATTERISTICHE:
 SCHEMA INSTALLAZIONE DISPOSITIVI MOBILI
 ═══════════════════════════════════════════════════════════════════
 
-DISTRIBUTORE ── Cavo MT ── TERMINALI ── [PUNTI ATTACCO] ── QUADRO MT
-                              ↓              ↓                ↓
-                        Locale Consegna   Dispositivi      Locale Utente
-                        (Distributore)    Mobili CEI       (Utente)
-                                         EN 61230
-                                             ↓
-                                      Procedure Operative
-                                      Dettagliate
+DISTRIBUTORE ── Cavo MT ── TERMINALI ──── [PUNTI ATTACCO] ── QUADRO MT
+                              ↓                 ↓                ↓
+                        Locale Consegna     Dispositivi      Locale Utente
+                        (Distributore)      Mobili CEI       (Utente)
+                                            EN 61230
+                                                ↓
+                                          Procedure Operative
+                                            Dettagliate
 
 CARATTERISTICHE:
 - Posizione: Punti di attacco sui terminali
@@ -795,7 +799,7 @@ CARATTERISTICHE:
     
     # Conformità normativa
     st.success("""
-    ✅ **Conformità Normativa Verificata:**
+    ✅ Conformità Normativa Verificata:
     • CEI 11-27 - Messa a terra negli impianti elettrici
     • CEI EN 61230 - Dispositivi mobili di messa a terra (se applicabile)
     • Coordinamento con distributore garantito
@@ -869,10 +873,18 @@ def step_5_protection_coordination():
     with col1:
         st.info(f"""
         **Protezione Generale (DG):**
+    
+        **Protezioni di Sovracorrente:**
         • I>> ≤ 250 A, tempo ≤ 500 ms
         • I>>> ≤ 600 A, tempo ≤ 120 ms
+    
+        **Protezioni di Terra:**
         • Io> ≤ 2 A, tempo ≤ 450 ms
         • Io>> ≤ {int(distributor_data['earth_fault_current_a'] * 1.4)} A, tempo ≤ 170 ms
+
+        **Legenda:**
+        I>/I>>/I>>> - Sovraccarico/Cortocircuito Moderato/Elevato\n
+        Io>/Io>> - Terra Sensibile/Principale
         """)
     
     with col2:
@@ -996,16 +1008,22 @@ def step_6_bt_switchgear_design(db):
     # Selezione sezionatore principale
     main_switch = db.get_bt_switch(current_transformer, load_break=True)
     
-    col1, col2, col3 = st.columns([2, 3, 2])
+    col1, col2 = st.columns([1, 1])
+
     with col1:
-        st.metric("Sezionatore scelto", main_switch.series)
+        st.metric("Produttore", main_switch.manufacturer)
+        st.metric("Serie", main_switch.series)
+        st.metric("Descrizione", main_switch.description)
         st.metric("Tipo", main_switch.type)
+
     with col2:
         st.metric("Corrente nominale", f"{main_switch.rated_current} A")
         st.metric("Tensione nominale", f"{main_switch.rated_voltage} V")
-    with col3:
-        st.metric("Codice prodotto", main_switch.product_code)
+        st.metric("Potere interruzione", f"{main_switch.breaking_capacity} kA")
         st.metric("Costo stimato", f"€{main_switch.cost_estimate:,}")
+
+    # Codice prodotto separato (piena larghezza)
+    st.text(f"📋 Codice prodotto: {main_switch.product_code}")
     
     # ========== 6.2 - INTERRUTTORE GENERALE BT (PROTEZIONE) ==========
     st.subheader("⚡ 6.2 - Interruttore Generale BT (Emax 2)")
@@ -1018,16 +1036,22 @@ def step_6_bt_switchgear_design(db):
     # Selezione interruttore principale automatica
     main_breaker = db.get_bt_main_breaker(total_kva, breaking_ka=50)
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns([1, 1])
+
     with col1:
+        st.metric("Produttore", main_breaker.manufacturer)
         st.metric("Interruttore scelto", main_breaker.series)
         st.metric("Frame", main_breaker.frame)
+        st.metric("Tipo", main_breaker.type)  # 🆕 ACB/MCCB
+
     with col2:
         st.metric("Corrente nominale", f"{main_breaker.rated_current} A")
         st.metric("Potere interruzione", f"{main_breaker.breaking_capacity} kA")
-    with col3:
-        st.metric("Codice prodotto", main_breaker.product_code)
+        st.metric("Unità protezione", main_breaker.protection_unit)  # 🆕 PR331/P, ecc.
         st.metric("Costo stimato", f"€{main_breaker.cost_estimate:,}")
+
+    # Codice prodotto separato
+    st.text(f"📋 Codice prodotto: {main_breaker.product_code}")
     
     # ========== 6.3 - DISTRIBUZIONE CARICHI BT (CORRETTO) ==========
     st.subheader("📊 6.3 - Distribuzione Carichi BT")
@@ -1483,7 +1507,7 @@ METODOLOGIA SEGUITA
 Sequenza completa: Dati → Carichi → Trasformatori → Sezionatore Terra → 
                    Quadro MT → Protezioni → Quadro BT → Analisi Finale
 
-GENERATO DA: Software Cabina MT/BT Professional v2.0
+GENERATO DA: Software Cabina MT/BT Non Professional v2.0
 DATA: {pd.Timestamp.now().strftime('%d/%m/%Y %H:%M')}
         """)
     
