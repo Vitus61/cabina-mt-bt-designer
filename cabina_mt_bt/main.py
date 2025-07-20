@@ -1,5 +1,5 @@
 """
-Software Cabina MT/BT Professional v2.0 - VERSIONE FINALE CORRETTA
+Software Cabina MT/BT Non Professional v2.0 - VERSIONE FINALE CORRETTA
 Utilizza le funzioni esistenti in ui/steps.py
 """
 
@@ -15,7 +15,7 @@ try:
 except ImportError as e:
     REPORT_AVAILABLE = False
 
-# Aggiungi la cartella del progetto al path per gli import
+# Aggiunta la cartella del progetto al path per gli import
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Import dai moduli
@@ -117,7 +117,7 @@ def main():
         st.info("Controlla che il file ui/steps.py sia corretto e che non ci siano errori di import")
         st.stop()
     
-    # Definisci le funzioni step - ✅ TUTTE LE FUNZIONI ESISTONO IN ui/steps.py
+    #  funzioni step - ✅ TUTTE LE FUNZIONI ESISTONO IN ui/steps.py
     step_functions = {
         1: step_1_distributor_data,
         2: step_2_load_calculation,
