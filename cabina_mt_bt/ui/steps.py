@@ -1450,7 +1450,8 @@ REPORT FINALE PROGETTO CABINA MT/BT
 
 DATI GENERALI
 ─────────────────────────────────────────────────────────────────────────────
-• Potenza installata: {calculation_results.get('total_power_kva', 0)} kVA
+• Potenza effettiva: {calculation_results.get('total_power_kw', 0)} kW
+• Potenza apparente: {calculation_results.get('total_power_kva', 0)} kVA
 • Tensione MT: {distributor_data['voltage_kv']} kV
 • Tensione BT: 415V
 • Icc rete: {distributor_data['icc_3phase_ka']} kA
