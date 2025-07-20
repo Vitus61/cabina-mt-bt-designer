@@ -842,7 +842,7 @@ class ProductDatabase:
     # METODI DI SELEZIONE PRODOTTI - AGGIORNATI CON TUTTI GLI ATTRIBUTI
     # ===============================================================================
     
-    def get_transformer_by_power(self, required_kva: float, series: str = "hi_t_plus", margin: float = 1.2) -> TransformerSpec:
+    def get_transformer_by_power(self, required_kva: float, series: str = "hi_t_plus", margin: float = 1.15) -> TransformerSpec:
         """Seleziona trasformatore per potenza richiesta da serie specifica"""
         
         required_with_margin = required_kva * margin
