@@ -82,7 +82,7 @@ def main():
             st.write("**Sezionatore Terra:**")
             # Verifica se la funzione è disponibile
             try:
-                step_3_5_earth_switch_design
+                # step_3_5_earth_switch_design
                 st.write("✅ Disponibile")
             except NameError:
                 st.write("❌ Non trovato")
